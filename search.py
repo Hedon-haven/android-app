@@ -29,6 +29,9 @@ def search_request(providers: list, query: str, filters: list) -> list:
 
 def pornhub_search(query: str, filters: list, page: int) -> Tuple[list, int]:
     logging.info("Querying pornhub with {}".format(query))
+    logging.info("Query: " + query)
+    logging.info("Filters: " + str(filters))
+    logging.info("Page: " + str(page))
     if not query == "":
         request = requests_get("https://www.pornhub.com/video/search?search=" + query + "&page=" + str(page))
         query_type = "videoSearchResult"
@@ -36,12 +39,14 @@ def pornhub_search(query: str, filters: list, page: int) -> Tuple[list, int]:
         request = requests_get("https://www.pornhub.com/video")
         query_type = "videoCategory"
     if request.status_code == 200:
+        logging.info("Pornhub request successful")
         soup_data = BeautifulSoup(request.text, 'html.parser')
         video_list = soup_data.find(id=query_type).find_all(  # videoCategory
             class_="pcVideoListItem js-pop videoblock videoBox")
         results_dict = []
         video_amount = 0
         for result in video_list:
+            logging.info("Found result")
             temp_dict_item = {
                 "id": video_amount,
                 "provider": "pornhub",

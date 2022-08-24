@@ -116,7 +116,7 @@
         Label:
             text: "50"
         Image:
-            source: "assets/icons/blank.png"
+            source: "assets/icons_misc/blank.png"
         Image:
             source: "assets/icons_light/thumbs.png"
         Label:
@@ -224,9 +224,6 @@
                     background_color: 0,0,0,0
                     on_press:
                         root.search()
-                        root.manager.transition = FallOutTransition()
-                        root.manager.transition.duration = 0.05
-                        root.manager.current = 'main_screen'
         Label:
             text: "Filters"
 
@@ -242,33 +239,36 @@
         Video:
             id: video_widget
             source: ""
+            # TODO: make remote preview images, when kivy fixes it
             preview: ""
             state: "play"
             options: {'eos': 'loop'}
             allow_fullscreen: True
             allow_stretch: True
             keep_ratio: True
+        # Grey filter for showing controls
         Widget:
             id: controls_background
             canvas:
                 Color:
-                    rgba: 0,0,0,0.5
+                    rgb: 0,0,0
                 Rectangle:
                     pos: self.pos
-                    size: self.size if not self.disabled else (0, 0)
+                    size: self.size
+            opacity: 0
             disabled: True
-            on_touch_down: root.enable_controls()
 
         Button:
             id: controls_play
             canvas:
                 Rectangle:
-                    size: (256, 256) if not self.disabled else (0, 0)
+                    size: (256, 256)
                     pos: (self.pos[0]+self.size[0]/2.0) - 256/2.0, (self.pos[1]+self.size[1]/2.0) - 256/2.0
                     source: "assets/icons_light/play.png" if video_widget.state == "pause" else "assets/icons_light/pause.png"
             background_color: 0,0,0,0
             size_hint: (0.2, 0.4)
-            pos_hint: {"center_x" : 0.5, "center_y" : 0.5} if not self.disabled else {"center_x" : 0.5, "center_y" : -1}
+            pos_hint: {"center_x" : 0.5, "center_y" : 0.5}
+            opacity: 0
             disabled: True
             on_press:
                 self.source = "assets/icons_light/pause.png"
@@ -279,22 +279,21 @@
             max: max(video_widget.duration, video_widget.position, 1)
             value: video_widget.position
             disabled: True
-            pos_hint: {"center_x" : 0.5, "center_y" : 0.1} if not self.disabled else {"center_x" : 0.5, "center_y" : -1}
+            pos_hint: {"center_x" : 0.5, "center_y" : 0.1}
             size_hint: (0.9, 0.05)
+            opacity: 0
 
-#        Button:
-#            id: controls_fullscreen
-#            canvas:
-#                Rectangle:
-#                    size: (128, 128)
-#                    pos: (self.pos[0]+self.size[0]/2.0) - 128/2.0, (self.pos[1]+self.size[1]/2.0) - 128/2.0
-#                    source: "assets/icons_light/play.png" if video_widget.state == "pause" else "assets/icons_light/pause.png"
-#            background_color: 0,0,0,0
-#            size: 0.1, 0.1
-#            pos_hint: {"center_x" : 0.9, "center_y" : 0.5}
-##            on_press:
-##                self.source = "assets/icons_light/pause.png"
-##                root.toggle_video()
+        # This widget enables the controls
+        Widget:
+            id: controls_enabler
+            canvas:
+                Color:
+                    rgba: 0,0,0,0
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            pos_hint: {"center_x" : 0.5, "center_y" : 0.5} if not self.disabled else {"center_x" : 0.5, "center_y" : -3}
+            on_touch_down: root.enable_controls()
 
 <SetupScreen1>:
     name: "setup_screen_1"

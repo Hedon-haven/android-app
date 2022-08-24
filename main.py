@@ -7,7 +7,7 @@ from kivy.clock import Clock
 import logging
 import search
 import threading
-import concurrent
+from functools import partial
 
 
 class BlankScreen(Screen):
@@ -31,7 +31,7 @@ class SetupScreen3(Screen):
 class MainScreen(Screen):
     current_displayed_results = []
 
-    def display_search(self, results: list):
+    def display_search(self, results: list) -> None:
         logging.info("Displaying results from search")
         self.manager.get_screen("main_screen").current_displayed_results = results
         for result in results:
@@ -53,17 +53,14 @@ class MainScreen(Screen):
             self.manager.transition = RiseInTransition()
             self.manager.duration = 0
             self.manager.current = "video_screen"
-            threading.Thread(target=self.fetch_video, args=(instance,)).start()
+            threading.Thread(target=self.load_video, args=(instance,)).start()
 
-    def fetch_video(self, instance):
+    def load_video(self, instance):
         # get id from instance, get url of that id and then convert that to a mp4 and send to the video widget
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            yt_dlp = executor.submit(search.url_to_mp4, self.current_displayed_results[instance.id]["page_url"])
-            converted_url = yt_dlp.result()
-        # converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
-        # temporary only get 240p, because there is no quality selection yet
+        converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
+        # temporary only get 480p, because there is no quality selection yet
         self.manager.get_screen("video_screen").ids.video_widget.source = converted_url[0]["480p"]
-        # Not really needed, coz video autostarts
+        # TODO: Fix this preview
         self.manager.get_screen("video_screen").ids.video_widget.preview = converted_url[1]
         self.manager.get_screen("video_screen").ids.video_widget.state = 'play'
 
@@ -79,34 +76,75 @@ class VideoScreen(Screen):
         elif self.ids.video_widget.state == 'pause':
             self.ids.video_widget.state = 'play'
             self.controls_grabbed = False
-            Clock.schedule_once(self.disable_controls, 0.5)
+            Clock.schedule_once(self.disable_controls, 0.4)
 
     def enable_controls(self):
         if not self.show_controls:
             self.show_controls = True
-            # show all control widgets
+            self.ids.controls_enabler.disabled = True
+            # slowly show controls
+            self.increase_opacity(0.1, 0.1, 0)
+            # enable controls
             self.ids.controls_play.disabled = False
-            self.ids.controls_background.disabled = False
             self.ids.controls_progress_bar.disabled = False
-
             Clock.schedule_once(self.disable_controls, 3)
 
     def disable_controls(self, unused):  # the unused var is there coz Clock.schedule_once gives two values
         if not self.controls_grabbed:
             self.ids.controls_play.disabled = True
-            self.ids.controls_background.disabled = True
             self.ids.controls_progress_bar.disabled = True
+            self.decrease_opacity(1, 0.5, 0)
 
+            self.ids.controls_enabler.disabled = False
             self.show_controls = False
+
+    # recursive function to increase opacity
+    # Needed because time.sleep will stop video playback, and Clock.schedule_once gets skipped over by a while loop
+    def increase_opacity(self, opacity, background_opacity, unused):  # unused, coz Clock.schedule_once gives a value
+        print("unused: " + str(unused))
+        print("opacity: " + str(opacity))
+        print("background_opacity: " + str(background_opacity))
+        if opacity >= 1:
+            opacity = 1
+        self.ids.controls_play.opacity = opacity
+        self.ids.controls_progress_bar.opacity = opacity
+        self.ids.controls_background.opacity = background_opacity
+        opacity += 0.05
+        if background_opacity <= 0.4:
+            background_opacity += 0.1
+        else:
+            background_opacity = 0.5
+        if opacity >= 1:
+            return
+        Clock.schedule_once(partial(self.increase_opacity, opacity, background_opacity), 0.000001)
+
+    def decrease_opacity(self, opacity, background_opacity, unused):  # unused, coz Clock.schedule_once gives a value
+        print("unused: " + str(unused))
+        print("opacity: " + str(opacity))
+        print("background_opacity: " + str(background_opacity))
+        if opacity <= 0:  # negative values are ignore, so this sets opacity to 0, so that the widgets fully disappear
+            opacity = 0
+            background_opacity = 0
+        self.ids.controls_play.opacity = opacity
+        self.ids.controls_progress_bar.opacity = opacity
+        self.ids.controls_background.opacity = background_opacity
+        if opacity <= 0:  # exit recursion if opacity is 0
+            return
+        opacity -= 0.05
+        background_opacity -= 0.1
+        Clock.schedule_once(partial(self.decrease_opacity, opacity, background_opacity), 0.0000001)
 
 
 class SearchScreen(Screen):
 
     def search(self):
-        # add getting filters from gui
-
+        logging.info("Pressed search button")
+        self.manager.get_screen("main_screen").display_search(search.search_request(["pornhub"], "sexy", []))
+        self.manager.transition = FallOutTransition()
+        self.manager.transition.duration = 0.05
+        self.manager.current = 'main_screen'
+        # TODO: add filters
         # for testing
-        MainScreen.display_search(self, search.search_request(["pornhub"], "", []))
 
 
 class WindowManager(ScreenManager):
