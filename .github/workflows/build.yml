@@ -10,24 +10,13 @@ jobs:
     name: Build for Android
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'skip-ci')"
-
     steps:
+      # this clones the repo
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Generate Diff/Changelog
-        run: |
-          echo 'DIFF<<EOF' >> $GITHUB_ENV
-          git diff HEAD^..HEAD >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
-          
-      - name: Generate release tag
-        id: tag
-        run: |
-          echo "::set-output name=release_tag::AndroidRelease$(date +"%Y.%m.%d_%H-%M")"
-          
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
@@ -35,9 +24,21 @@ jobs:
           command: buildozer android release
           workdir: .
           buildozer_version: stable
+
+      - name: Prepare Changelog
+        run: |
+          echo 'CHNGLG<<EOF' >> $GITHUB_ENV
+          cat /home/runner/work/android-app/android-app/changelog.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+          
+      - name: Generate release tag
+        id: tag
+        # this gets the apk and extracts the version from the file name
+        run: |
+          echo "::set-output name=release_tag::$(ls bin | grep .apk | awk -F'[-]' '{print $2}')"
           
       - name: Rename apk file
-        run: cp ${{ steps.buildozer.outputs.filename }} "${GITHUB_WORKSPACE}/release.apk"
+        run: sudo mv ${{ steps.buildozer.outputs.filename }} bin/release.apk
         
       - name: Create new release
         uses: softprops/action-gh-release@v1
@@ -46,7 +47,5 @@ jobs:
           name: ${{ github.event.head_commit.message }}
           body: |
             Changes since the last release:
-            ```
-            ${{ env.DIFF }}
-            ```
+            ${{ env.CHNGLG }}
           files: "${GITHUB_WORKSPACE}/release.apk"
