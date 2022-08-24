@@ -32,10 +32,13 @@ jobs:
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          command: buildozer android release
+          command: buildozer android debug
           workdir: .
           buildozer_version: stable
-
+          
+      - name: Rename apk file
+        run: mv ${{ steps.buildozer.outputs.filename }} ./release.apk
+        
       - name: Create new release
         uses: softprops/action-gh-release@v1
         with:
@@ -46,4 +49,4 @@ jobs:
             ```
             ${{ env.DIFF }}
             ```
-          files: ${{ steps.buildozer.outputs.filename }}
+          files: ./release.apk
