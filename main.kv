@@ -429,15 +429,13 @@
                     size: self.size
         GridLayout:
             cols: 2
-
+            # TODO: Rewrite as clickable images instead of checkboxes
             Label:
                 text: "Pornhub"
                 font_size: 25
             CheckBox:
                 group: 1
                 id: pornhub_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
 
             Label:
                 text: "xVideos"
@@ -445,16 +443,13 @@
             CheckBox:
                 group: 2
                 id: xvideos_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
+
             Label:
                 text: "xHamster"
                 font_size: 25
             CheckBox:
                 group: 3
                 id: xhamster_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
 
             Label:
                 text: "YouPorn"
@@ -462,24 +457,20 @@
             CheckBox:
                 group: 4
                 id: youporn_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
+
             Label:
                 text: "HClips"
                 font_size: 25
             CheckBox:
                 group: 5
                 id: hclips_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
+
             Label:
                 text: "Porn.com"
                 font_size: 25
             CheckBox:
                 group: 6
                 id: porncom_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
 
             Label:
                 text: "SpankBang"
@@ -487,8 +478,7 @@
             CheckBox:
                 group: 7
                 id: spankbang_checkbox
-#                on_active:
-#                    root.pornhub_checkbox_clicked(self)
+
         RoundedButton:
             text: "Done"
             size_hint: 0.4, 0.1
