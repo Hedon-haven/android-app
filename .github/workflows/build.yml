@@ -7,7 +7,7 @@ on:
 jobs:
   # Build job. Builds app for Android with Buildozer
   build-android:
-    name: Build for Android
+    name: Build apk for Android
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'skip-ci')"
     steps:
@@ -21,11 +21,17 @@ jobs:
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          command: buildozer android release
+          command: |
+            if echo ${{ github.event.head_commit.message }} | grep -c "alpha\|beta"
+            then
+              buildozer android debug
+            else
+              buildozer android release      
+            fi
           workdir: .
           buildozer_version: stable
 
-      - name: Prepare Changelog
+      - name: Prepare Changelog        
         run: |
           echo 'CHNGLG<<EOF' >> $GITHUB_ENV
           cat /home/runner/work/android-app/android-app/changelog.txt >> $GITHUB_ENV
@@ -33,10 +39,18 @@ jobs:
           
       - name: Generate release tag
         id: tag
-        # this gets the apk and extracts the version from the file name
+        # extract version from apk name and add alpha/beta if needed
         run: |
-          echo "::set-output name=release_tag::$(ls bin | grep .apk | awk -F'[-]' '{print $2}')"
-          
+          if echo ${{ github.event.head_commit.message }} | grep -c "alpha"
+          then
+            echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')-alpha"
+          elif echo ${{ github.event.head_commit.message }} | grep -c "beta"
+          then
+            echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')-beta"
+          else
+            echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')"          
+          fi
+
       - name: Rename apk file
         run: sudo mv ${{ steps.buildozer.outputs.filename }} bin/release.apk
         
@@ -46,6 +60,6 @@ jobs:
           tag_name: ${{ steps.tag.outputs.release_tag }}
           name: ${{ github.event.head_commit.message }}
           body: |
-            Changes since the last release:
+            Changes since last release:
             ${{ env.CHNGLG }}
-          files: "${GITHUB_WORKSPACE}/release.apk"
+          files: bin/release.apk
