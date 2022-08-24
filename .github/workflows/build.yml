@@ -44,11 +44,14 @@ jobs:
           if echo ${{ github.event.head_commit.message }} | grep -c "alpha"
           then
             echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')-alpha"
+            echo "::set-output name=release_type::true"
           elif echo ${{ github.event.head_commit.message }} | grep -c "beta"
           then
             echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')-beta"
+            echo "::set-output name=release_type::true"
           else
-            echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')"          
+            echo "::set-output name=release_tag::v$(ls bin | grep .apk | awk -F'[-]' '{print $2}')"
+            echo "::set-output name=release_type::false"
           fi
 
       - name: Rename apk file
@@ -59,6 +62,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.release_tag }}
           name: ${{ github.event.head_commit.message }}
+          prerelease: ${{ steps.tag.outputs.release_type }}
           body: |
             Changes since last release:
             ${{ env.CHNGLG }}
