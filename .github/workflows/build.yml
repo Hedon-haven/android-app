@@ -3,8 +3,6 @@ on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   # Build job. Builds app for Android with Buildozer
@@ -16,7 +14,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
+        with:
+          fetch-depth: 0
+
       - name: Generate Diff/Changelog
         run: |
           echo 'DIFF<<EOF' >> $GITHUB_ENV
