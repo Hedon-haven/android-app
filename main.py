@@ -53,18 +53,19 @@ class MainScreen(Screen):
             self.manager.transition = RiseInTransition()
             self.manager.duration = 0
             self.manager.current = "video_screen"
-            # get id from instance, get url of that id and then convert that to a mp4 and send to the video widget
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                yt_dlp = executor.submit(search.url_to_mp4, self.current_displayed_results[instance.id]["page_url"])
-                converted_url = yt_dlp.result()
-            threading.Thread(target=search.url_to_mp4,
-                             args=self.current_displayed_results[instance.id]["page_url"]).start()
-            # converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
-            # temporary only get 240p, because there is no quality selection yet
-            self.manager.get_screen("video_screen").ids.video_widget.source = converted_url[0]["480p"]
-            # Not really needed, coz video autostarts
-            self.manager.get_screen("video_screen").ids.video_widget.preview = converted_url[1]
-            self.manager.get_screen("video_screen").ids.video_widget.state = 'play'
+            threading.Thread(target=self.fetch_video, args=(instance,)).start()
+
+    def fetch_video(self, instance):
+        # get id from instance, get url of that id and then convert that to a mp4 and send to the video widget
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            yt_dlp = executor.submit(search.url_to_mp4, self.current_displayed_results[instance.id]["page_url"])
+            converted_url = yt_dlp.result()
+        # converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
+        # temporary only get 240p, because there is no quality selection yet
+        self.manager.get_screen("video_screen").ids.video_widget.source = converted_url[0]["480p"]
+        # Not really needed, coz video autostarts
+        self.manager.get_screen("video_screen").ids.video_widget.preview = converted_url[1]
+        self.manager.get_screen("video_screen").ids.video_widget.state = 'play'
 
 
 class VideoScreen(Screen):

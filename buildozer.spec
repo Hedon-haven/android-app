@@ -42,7 +42,7 @@ requirements = python3,kivy,ffpyplayer,yt-dlp,beautifulsoup4,requests,urllib3,ch
 # requirements.source.kivy = ../../kivy
 
 # (str) Presplash of the application
-presplash.filename = %(source.dir)s/assets/presplash.png
+presplash.filename = %(source.dir)s/assets/icons_misc/blank.png
 
 # (str) Icon of the application
 icon.filename = assets/app_icons/hedon.png
@@ -65,7 +65,7 @@ fullscreen = 0
 # red, blue, green, black, white, gray, cyan, magenta, yellow, lightgray,
 # darkgray, grey, lightgrey, darkgrey, aqua, fuchsia, lime, maroon, navy,
 # olive, purple, silver, teal.
-#android.presplash_color = #1A1C19
+android.presplash_color = #000000
 
 # (string) Presplash animation using Lottie format.
 # see https://lottiefiles.com/ for examples and https://airbnb.design/lottie/
