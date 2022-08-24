@@ -16,7 +16,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+        
+      - name: Generate Diff/Changelog
+        run: |
+          echo 'DIFF<<EOF' >> $GITHUB_ENV
+          git diff HEAD^..HEAD >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+          
+      - name: Generate release tag
+        id: tag
+        run: |
+          echo "::set-output name=release_tag::AndroidRelease$(date +"%Y.%m.%d_%H-%M")"
+          
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
@@ -28,10 +39,11 @@ jobs:
       - name: Create new release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.tag.outputs.release_tag }}
           name: ${{ github.event.head_commit.message }}
           body: |
             Changes since the last release:
             ```
-            ${{ github.event.head_commit.message }}
+            ${{ env.DIFF }}
             ```
           files: ${{ steps.buildozer.outputs.filename }}
