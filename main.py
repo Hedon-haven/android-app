@@ -1,11 +1,13 @@
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition, SlideTransition, FallOutTransition, \
-    CardTransition
+    CardTransition, RiseInTransition
 from kivy.factory import Factory
 from kivy.clock import Clock
 import logging
 import search
+import threading
+import concurrent
 
 
 class BlankScreen(Screen):
@@ -48,15 +50,21 @@ class MainScreen(Screen):
 
     def preview_clicked(self, instance, touch):
         if instance.collide_point(*touch.pos):
-            # convert link to mp4 and send to video player
+            self.manager.transition = RiseInTransition()
+            self.manager.duration = 0
             self.manager.current = "video_screen"
             # get id from instance, get url of that id and then convert that to a mp4 and send to the video widget
-            converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                yt_dlp = executor.submit(search.url_to_mp4, self.current_displayed_results[instance.id]["page_url"])
+                converted_url = yt_dlp.result()
+            threading.Thread(target=search.url_to_mp4,
+                             args=self.current_displayed_results[instance.id]["page_url"]).start()
+            # converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
             # temporary only get 240p, because there is no quality selection yet
-            print("video_url iz: " + str(converted_url))
             self.manager.get_screen("video_screen").ids.video_widget.source = converted_url[0]["480p"]
             # Not really needed, coz video autostarts
             self.manager.get_screen("video_screen").ids.video_widget.preview = converted_url[1]
+            self.manager.get_screen("video_screen").ids.video_widget.state = 'play'
 
 
 class VideoScreen(Screen):
@@ -95,7 +103,7 @@ class SearchScreen(Screen):
 
     def search(self):
         # add getting filters from gui
-        
+
         # for testing
         MainScreen.display_search(self, search.search_request(["pornhub"], "", []))
 
@@ -150,8 +158,8 @@ class MainApp(App):
         Window.clearcolor = (26 / 255, 28 / 255, 25 / 255, 1)
         window_manager = WindowManager()
         window_manager.select_start_screen()
-       # Window.maximize()
-       # Window.fullscreen = True
+        # Window.maximize()
+        # Window.fullscreen = True
         return window_manager
 
 

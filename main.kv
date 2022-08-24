@@ -244,7 +244,7 @@
             source: ""
             preview: ""
             state: "play"
-            options: {'eos': 'stop'}
+            options: {'eos': 'loop'}
             allow_fullscreen: True
             allow_stretch: True
             keep_ratio: True
@@ -267,8 +267,8 @@
                     pos: (self.pos[0]+self.size[0]/2.0) - 256/2.0, (self.pos[1]+self.size[1]/2.0) - 256/2.0
                     source: "assets/icons_light/play.png" if video_widget.state == "pause" else "assets/icons_light/pause.png"
             background_color: 0,0,0,0
-            size_hint: (0.2, 0.4) if not self.disabled else (0, 0)
-            pos_hint: {"center_x" : 0.5, "center_y" : 0.5}
+            size_hint: (0.2, 0.4)
+            pos_hint: {"center_x" : 0.5, "center_y" : 0.5} if not self.disabled else {"center_x" : 0.5, "center_y" : -1}
             disabled: True
             on_press:
                 self.source = "assets/icons_light/pause.png"
@@ -279,13 +279,9 @@
             max: max(video_widget.duration, video_widget.position, 1)
             value: video_widget.position
             disabled: True
-            pos_hint: {"center_x" : 0.5, "center_y" : 0.1}
-            size_hint: (1, 0.05) if not self.disabled else (0, 0)
-            background_disabled: ""
-            background_color: 0,0,0,0
-            background_disabled_horizontal: ""
-            background_disabled_vertical: ""
-            background_normal: ""
+            pos_hint: {"center_x" : 0.5, "center_y" : 0.1} if not self.disabled else {"center_x" : 0.5, "center_y" : -1}
+            size_hint: (0.9, 0.05)
+
 #        Button:
 #            id: controls_fullscreen
 #            canvas:
