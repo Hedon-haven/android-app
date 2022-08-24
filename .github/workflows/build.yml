@@ -37,7 +37,7 @@ jobs:
           buildozer_version: stable
           
       - name: Rename apk file
-        run: cp ${{ steps.buildozer.outputs.filename }} bin/release.apk
+        run: cp ${{ steps.buildozer.outputs.filename }} "${GITHUB_WORKSPACE}/release.apk"
         
       - name: Create new release
         uses: softprops/action-gh-release@v1
@@ -49,4 +49,4 @@ jobs:
             ```
             ${{ env.DIFF }}
             ```
-          files: bin/release.apk
+          files: "${GITHUB_WORKSPACE}/release.apk"
