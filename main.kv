@@ -78,12 +78,24 @@
 
 <MenuButton@Button>
     color: hex('#ffffff')
-    valign: "center"
+    valign: "bottom"
     halign: "left"
     text_size: self.width, None
     background_normal: ""
     background_color: (0,0,0,0)
     font_size: self.width/15
+    pos_hint: {'x': None, 'y': 1}
+
+# TODO: Fix position of the label
+<FailMessage@Label>:
+    color: hex('#ffffff')
+    valign: "center"
+    halign: "center"
+    text_size: self.width, None
+    background_normal: ""
+    background_color: (0,0,0,0)
+    font_size: self.width/15
+    text: "No search results found"
 
 <VideoPreview@BoxLayout>:
     size_hint_y: None
@@ -224,8 +236,15 @@
                     background_color: 0,0,0,0
                     on_press:
                         root.search()
-        Label:
-            text: "Filters"
+        TextInput:
+            id: search_input
+            background_color: 0,0,0,0
+            multiline: False
+            font_color: 1,1,1,1
+            focus: True
+            foreground_color: hex("#ffffff")
+            font_size: self.width/15
+
 
 <VideoScreen>:
     name: "video_screen"
@@ -242,7 +261,7 @@
             # TODO: make remote preview images, when kivy fixes it
             preview: ""
             state: "play"
-            options: {'eos': 'loop'}
+            options: {'eos': 'stop'}
             allow_fullscreen: True
             allow_stretch: True
             keep_ratio: True

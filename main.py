@@ -6,8 +6,7 @@ from kivy.factory import Factory
 from kivy.clock import Clock
 import logging
 import search
-import threading
-from functools import partial
+from threading import Thread
 
 
 class BlankScreen(Screen):
@@ -15,8 +14,8 @@ class BlankScreen(Screen):
 
 
 class SetupScreen1(Screen):
-    def image_clicked(self, instance):
-        print('down')
+    def image_clicked(self, instance) -> None:
+        logging.info('pressed image')
         instance.source = 'assets/app_icons/bank_select.png'
 
 
@@ -31,31 +30,37 @@ class SetupScreen3(Screen):
 class MainScreen(Screen):
     current_displayed_results = []
 
-    def display_search(self, results: list) -> None:
+    def draw_search_results(self, results: list) -> None:
         logging.info("Displaying results from search")
+        self.clear_results()
         self.manager.get_screen("main_screen").current_displayed_results = results
-        for result in results:
-            self.new_video_preview = Factory.VideoPreview()
-            self.new_video_preview.preview_image = result["thumbnail"]
-            self.new_video_preview.title = result["title"]
-            self.new_video_preview.id = result["id"]
-            self.new_video_preview.bind(on_touch_down=self.manager.get_screen("main_screen").preview_clicked)
-            self.manager.get_screen("main_screen").ids.video_grid.add_widget(self.new_video_preview)
+        if not results:
+            logging.info("No results received, displaying fail")
+            self.ids.video_grid.add_widget(Factory.FailMessage())
+        else:
+            for result in results:
+                self.new_video_preview = Factory.VideoPreview()
+                self.new_video_preview.preview_image = result["thumbnail"]
+                self.new_video_preview.title = result["title"]
+                self.new_video_preview.id = result["id"]
+                self.new_video_preview.bind(on_touch_down=self.manager.get_screen("main_screen").preview_clicked)
+                self.manager.get_screen("main_screen").ids.video_grid.add_widget(self.new_video_preview)
 
-    def clear_results(self):
+    def clear_results(self) -> None:
+        self.manager.get_screen("main_screen").ids.video_grid.clear_widgets()
         self.ids.video_grid.clear_widgets()
 
-    def open_menu(self):
+    def open_menu(self) -> None:
         self.ids.menu_view.dismiss()
 
-    def preview_clicked(self, instance, touch):
+    def preview_clicked(self, instance, touch) -> None:
         if instance.collide_point(*touch.pos):
             self.manager.transition = RiseInTransition()
             self.manager.duration = 0
             self.manager.current = "video_screen"
-            threading.Thread(target=self.load_video, args=(instance,)).start()
+            Thread(target=self.load_video, args=(instance,)).start()
 
-    def load_video(self, instance):
+    def load_video(self, instance) -> None:
         # get id from instance, get url of that id and then convert that to a mp4 and send to the video widget
         converted_url = search.url_to_mp4(self.current_displayed_results[instance.id]["page_url"])
         # temporary only get 480p, because there is no quality selection yet
@@ -69,41 +74,42 @@ class VideoScreen(Screen):
     show_controls = False
     controls_grabbed = False
 
-    def toggle_video(self):
+    def toggle_video(self) -> None:
         if self.ids.video_widget.state == 'play':
             self.ids.video_widget.state = 'pause'
             self.controls_grabbed = True
         elif self.ids.video_widget.state == 'pause':
             self.ids.video_widget.state = 'play'
             self.controls_grabbed = False
-            Clock.schedule_once(self.disable_controls, 0.4)
+            Clock.schedule_once(lambda dt: self.disable_controls(), 0.4)
 
-    def enable_controls(self):
+    def enable_controls(self) -> None:
         if not self.show_controls:
             self.show_controls = True
             self.ids.controls_enabler.disabled = True
-            # slowly show controls
-            self.increase_opacity(0.1, 0.1, 0)
+
+            logging.info("Decreasing opacity for video widgets")
+            self.increase_opacity(0.1, 0.1)
+
             # enable controls
             self.ids.controls_play.disabled = False
             self.ids.controls_progress_bar.disabled = False
-            Clock.schedule_once(self.disable_controls, 3)
+            Clock.schedule_once(lambda dt: self.disable_controls(), 3)
 
-    def disable_controls(self, unused):  # the unused var is there coz Clock.schedule_once gives two values
+    def disable_controls(self) -> None:  # the unused var is there coz Clock.schedule_once gives two values
         if not self.controls_grabbed:
             self.ids.controls_play.disabled = True
             self.ids.controls_progress_bar.disabled = True
-            self.decrease_opacity(1, 0.5, 0)
+
+            logging.info("Decreasing opacity for video widgets")
+            self.decrease_opacity(1, 0.5)
 
             self.ids.controls_enabler.disabled = False
             self.show_controls = False
 
     # recursive function to increase opacity
     # Needed because time.sleep will stop video playback, and Clock.schedule_once gets skipped over by a while loop
-    def increase_opacity(self, opacity, background_opacity, unused):  # unused, coz Clock.schedule_once gives a value
-        print("unused: " + str(unused))
-        print("opacity: " + str(opacity))
-        print("background_opacity: " + str(background_opacity))
+    def increase_opacity(self, opacity, background_opacity) -> None:
         if opacity >= 1:
             opacity = 1
         self.ids.controls_play.opacity = opacity
@@ -115,14 +121,12 @@ class VideoScreen(Screen):
         else:
             background_opacity = 0.5
         if opacity >= 1:
+            logging.info("Exiting")
             return
-        Clock.schedule_once(partial(self.increase_opacity, opacity, background_opacity), 0.000001)
+        Clock.schedule_once(lambda dt: self.increase_opacity(opacity, background_opacity), 0.0000001)
 
-    def decrease_opacity(self, opacity, background_opacity, unused):  # unused, coz Clock.schedule_once gives a value
-        print("unused: " + str(unused))
-        print("opacity: " + str(opacity))
-        print("background_opacity: " + str(background_opacity))
-        if opacity <= 0:  # negative values are ignore, so this sets opacity to 0, so that the widgets fully disappear
+    def decrease_opacity(self, opacity, background_opacity) -> None:
+        if opacity <= 0:  # negative values are ignored, so this sets opacity to 0, so that the widgets fully disappear
             opacity = 0
             background_opacity = 0
         self.ids.controls_play.opacity = opacity
@@ -132,14 +136,15 @@ class VideoScreen(Screen):
             return
         opacity -= 0.05
         background_opacity -= 0.1
-        Clock.schedule_once(partial(self.decrease_opacity, opacity, background_opacity), 0.0000001)
+        Clock.schedule_once(lambda dt: self.decrease_opacity(opacity, background_opacity), 0.0000001)
 
 
 class SearchScreen(Screen):
 
-    def search(self):
+    def search(self) -> None:
         logging.info("Pressed search button")
-        self.manager.get_screen("main_screen").display_search(search.search_request(["pornhub"], "sexy", []))
+        self.manager.get_screen("main_screen").draw_search_results(
+            search.search_request(["pornhub"], self.ids.search_input.text, []))
         self.manager.transition = FallOutTransition()
         self.manager.transition.duration = 0.05
         self.manager.current = 'main_screen'
@@ -152,7 +157,7 @@ class WindowManager(ScreenManager):
         super(WindowManager, self).__init__(**kwargs)
         Window.bind(on_keyboard=self.keyboard)
 
-    def select_start_screen(self):  # Decide whether setup screen needs to be shown to user
+    def select_start_screen(self) -> None:  # Decide whether setup screen needs to be shown to user
         self.transition = NoTransition()
         self.transition.duration = 0
         if skip_setup:
@@ -160,7 +165,7 @@ class WindowManager(ScreenManager):
         else:
             self.current = 'setup_screen_1'
 
-    def keyboard(self, window, key, *args):
+    def keyboard(self, window, key, *args) -> bool:
         # Back gesture on android
         if key == 27:
             # TODO: rewrite as match

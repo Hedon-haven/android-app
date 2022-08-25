@@ -41,8 +41,12 @@ def pornhub_search(query: str, filters: list, page: int) -> Tuple[list, int]:
     if request.status_code == 200:
         logging.info("Pornhub request successful")
         soup_data = BeautifulSoup(request.text, 'html.parser')
-        video_list = soup_data.find(id=query_type).find_all(  # videoCategory
-            class_="pcVideoListItem js-pop videoblock videoBox")
+        try:
+            video_list = soup_data.find(id=query_type).find_all(  # videoCategory
+                class_="pcVideoListItem js-pop videoblock videoBox")
+        except AttributeError:
+            logging.warning("No results found")
+            return [], 0
         results_dict = []
         video_amount = 0
         for result in video_list:
@@ -64,10 +68,10 @@ def pornhub_search(query: str, filters: list, page: int) -> Tuple[list, int]:
 
 
 def url_to_mp4(url: str) -> Tuple[dict, str]:
-    print("The url izzz: " + url)
+    logging.info("Converting: " + url)
     with YoutubeDL({'no_warnings': True}) as ydl:
         video_headers = ydl.extract_info(url, download=False)
-    print("here is response from ydl: " + str(video_headers))
+    logging.debug("YDL response: " + str(video_headers))
     logging.info("Youtube-dl response: " + str(video_headers))
     converted_dict = {}
     # TODO: rewrite as match
@@ -84,7 +88,7 @@ def url_to_mp4(url: str) -> Tuple[dict, str]:
             converted_dict["1440p"] = format["url"]
         elif format["format_id"] == "2160p":
             converted_dict["2160p"] = format["url"]
-    print(converted_dict)
+    logging.debug(converted_dict)
     return converted_dict, video_headers["thumbnail"]
 
 
