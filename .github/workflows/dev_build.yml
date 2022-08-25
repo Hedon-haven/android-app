@@ -1,0 +1,54 @@
+name: Build dev release
+on:
+  # Triggers the workflow on push or pull request events but only for the "dev" branch
+  push:
+    branches: [ "dev" ]
+
+jobs:
+  # Build job. Builds app for Android with Buildozer
+  build-android:
+    name: Build dev apk for Android
+    runs-on: ubuntu-latest
+    if: "contains(github.event.head_commit.message, 'build-apk')"
+    steps:
+      # this clones the repo
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          workdir: .
+          buildozer_version: stable
+
+      - name: Prepare Changelog        
+        run: |
+          echo 'CHNGLG<<EOF' >> $GITHUB_ENV
+          cat /home/runner/work/android-app/android-app/changelog.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+          
+      - name: Rename apk file
+        run: sudo mv ${{ steps.buildozer.outputs.filename }} bin/release-dev.apk
+        
+      - name: Delete old dev release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: devbuild
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create new release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: devbuild
+          name: Dev Build - ${{ github.event.head_commit.message }}
+          prerelease: true
+          body: |
+            Changes since last release:
+            ${{ env.CHNGLG }}
+          files: bin/release-dev.apk
